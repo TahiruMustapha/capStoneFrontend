@@ -1,6 +1,11 @@
 import axios from "axios";
 
-const BASE_URL = "http://localhost:3000/api";
+//For local development
+export const BASE_URL = "http://localhost:3000/api";
+
+//.............................//
+//Docker environment
+// export const BASE_URL = "/api";
 
 export const getClients = async () => {
   const res = await axios.get(`${BASE_URL}/clients`);

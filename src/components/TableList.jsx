@@ -1,5 +1,6 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
+import { BASE_URL } from "../services/clientApi";
 
 export default function TableList({ onOpen ,searchTerm, onDelete}) {
   {
@@ -10,7 +11,7 @@ export default function TableList({ onOpen ,searchTerm, onDelete}) {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const reponse = await axios.get("http://localhost:3000/api/clients");
+        const reponse = await axios.get(`${BASE_URL}/clients`);
         setTableData(reponse.data);
       } catch (error) {
         setError(error);
