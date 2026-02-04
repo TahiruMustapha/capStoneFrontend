@@ -1,6 +1,7 @@
 name: Capstone-frontend-ci
 on:
-  branches: [main]
+  push:
+    branches: [main]
   pull_request:
     branches: [main]
 
