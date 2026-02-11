@@ -8,7 +8,7 @@ export default function Navbar({ onOpen, onSearch }) {
           <div className="navbar-start">
             {/* -- drop down <div></div> */}
             {/* ++ logo */}
-            <a className="btn btn-ghost text-xl">ClientManager</a>
+            <a className="btn btn-ghost text-xl">CapStone Client Manager</a>
             {/* ++ search input */}
           </div>
           <div className="navbar-center">
