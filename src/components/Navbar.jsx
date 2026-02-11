@@ -8,7 +8,7 @@ export default function Navbar({ onOpen, onSearch }) {
           <div className="navbar-start">
             {/* -- drop down <div></div> */}
             {/* ++ logo */}
-            <a className="btn btn-ghost text-xl">My Client Manager Page</a>
+            <a className="btn btn-ghost text-xl">My Client Manager Portal</a>
             {/* ++ search input */}
           </div>
           <div className="navbar-center">
