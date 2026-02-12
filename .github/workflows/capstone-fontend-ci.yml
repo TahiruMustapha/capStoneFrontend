@@ -2,9 +2,17 @@ name: Capstone-frontend-ci
 on:
   push:
     branches: [main]
+    tags:
+      - 'v*'
   pull_request:
     types: [opened, synchronize, reopened, closed]
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Manual version tag'
+        required: false
+        default: ''
 
 jobs:
   test:
@@ -48,6 +56,17 @@ jobs:
            username: ${{ secrets.DOCKERHUB_USERNAME }}
            password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+       - name: Set Tag
+         id: vars
+         run: |
+           if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ -n "${{ github.event.inputs.version }}" ]; then
+             echo "tag=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+           elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
+             echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+           else
+             echo "tag=${{ github.sha }}" >> $GITHUB_OUTPUT
+           fi
+
        - name: Build and push to Docker Hub
          uses: docker/build-push-action@v5
          with:
@@ -55,7 +74,7 @@ jobs:
            push: true
            tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/capstone-frontend:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/capstone-frontend:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/capstone-frontend:${{ steps.vars.outputs.tag }}
 
        - name: Signal Infra Repo
          run: |
@@ -70,9 +89,9 @@ jobs:
              -d '{
                "event_type": "frontend_updated",
                "client_payload": {
-                 "env": "${{ github.event_name == 'push' && 'production' || 'ephemeral' }}",
+                 "env": "${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && 'production' || 'ephemeral' }}",
                  "pr_number": "${{ github.event.number || '0' }}",
-                 "frontend_tag": "${{ github.sha }}",
+                 "frontend_tag": "${{ steps.vars.outputs.tag }}",
                  "repository": "${{ github.repository }}"
                }
              }'
