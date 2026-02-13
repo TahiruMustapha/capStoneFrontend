@@ -2,21 +2,17 @@ name: Capstone-frontend-ci
 on:
   push:
     branches: [main]
-    tags:
-      - 'v*'
   pull_request:
     types: [opened, synchronize, reopened, closed]
     branches: [main]
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Manual version tag'
-        required: false
-        default: ''
+
+permissions:
+  contents: read
 
 jobs:
   test:
     name: Run Tests
+    if: github.event_name != 'pull_request' || github.event.action != 'closed'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -37,7 +33,7 @@ jobs:
     name: Build and Trigger Infra
 
 # Run on push to main or opened/synced PRs (not closed)
-    if: github.event.action != 'closed'
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
     needs: test
     runs-on: ubuntu-latest
     
@@ -56,17 +52,6 @@ jobs:
            username: ${{ secrets.DOCKERHUB_USERNAME }}
            password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-       - name: Set Tag
-         id: vars
-         run: |
-           if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ -n "${{ github.event.inputs.version }}" ]; then
-             echo "tag=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-           elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
-             echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
-           else
-             echo "tag=${{ github.sha }}" >> $GITHUB_OUTPUT
-           fi
-
        - name: Build and push to Docker Hub
          uses: docker/build-push-action@v5
          with:
@@ -74,7 +59,7 @@ jobs:
            push: true
            tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/capstone-frontend:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/capstone-frontend:${{ steps.vars.outputs.tag }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/capstone-frontend:${{ github.sha }}
 
        - name: Signal Infra Repo
          run: |
@@ -89,9 +74,9 @@ jobs:
              -d '{
                "event_type": "frontend_updated",
                "client_payload": {
-                 "env": "${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && 'production' || 'ephemeral' }}",
+                 "env": "${{ github.event_name == 'push' && 'production' || 'ephemeral' }}",
                  "pr_number": "${{ github.event.number || '0' }}",
-                 "frontend_tag": "${{ steps.vars.outputs.tag }}",
+                 "frontend_tag": "${{ github.sha }}",
                  "repository": "${{ github.repository }}"
                }
              }'
@@ -99,7 +84,7 @@ jobs:
   destroy-env:
     name: Destroy Ephemeral Env
     # Only run when a PR is closed
-    if: github.event.action == 'closed'
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
     runs-on: ubuntu-latest
     steps:
       - name: Signal Cleanup
