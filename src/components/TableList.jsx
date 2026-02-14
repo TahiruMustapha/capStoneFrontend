@@ -37,9 +37,9 @@ export default function TableList({ onOpen ,searchTerm, onDelete}) {
             <tr>
               {/* ++status rate */}
               <th></th>
-              <th>Client Name</th>
-              <th>Client Email</th>
-              <th>Client Job</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Job</th>
               <th>Rate</th>
               <th>Status</th>
               <th></th>
