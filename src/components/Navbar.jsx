@@ -23,8 +23,6 @@ export default function Navbar({ onOpen, onSearch }) {
             </div>
           </div>
           <div className="navbar-end">
-            {/* -- svg burrnos divs */}
-            {/* ++ add modal on clcik button  */}
   
             <button onClick={onOpen} className="btn btn-primary">
               Add new Client
