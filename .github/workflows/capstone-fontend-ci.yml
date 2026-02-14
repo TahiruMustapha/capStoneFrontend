@@ -6,6 +6,10 @@ on:
     types: [opened, synchronize, reopened, closed]
     branches: [main]
 
+concurrency:
+  group: deploy-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -32,13 +36,12 @@ jobs:
   build-and-push:
     name: Build and Trigger Infra
 
-# Run on push to main or opened/synced PRs (not closed)
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+  # Do not run on PR closures
+  # Also skip fork PRs
+     
+    if: github.event.action != 'closed' && (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository)
     needs: test
     runs-on: ubuntu-latest
-    
-    # if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    # environment: production
     
     steps:
        - uses: actions/checkout@v4
@@ -52,15 +55,27 @@ jobs:
            username: ${{ secrets.DOCKERHUB_USERNAME }}
            password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-       - name: Build and push to Docker Hub
+       - name: Build and Push (main)
+         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
          uses: docker/build-push-action@v5
          with:
-           context: .
-           push: true
-           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/capstone-frontend:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/capstone-frontend:${{ github.sha }}
+            context: .
+            push: true
+            tags: |
+              ${{ secrets.DOCKERHUB_USERNAME }}/capstone-frontend:latest
+              ${{ secrets.DOCKERHUB_USERNAME }}/capstone-frontend:${{ github.sha }}
 
+
+       - name: Build and Push (PR)
+         if: github.event_name == 'pull_request'
+         uses: docker/build-push-action@v5
+         with:
+            context: .
+            push: true
+            tags: |
+             ${{ secrets.DOCKERHUB_USERNAME }}/capstone-frontend:${{ github.sha }}
+
+      
        - name: Signal Infra Repo
          run: |
            set -euo pipefail
@@ -83,8 +98,8 @@ jobs:
 
   destroy-env:
     name: Destroy Ephemeral Env
-    # Only run when a PR is closed
-    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    # Only run when a PR is closed It will skipfork PRs
+    if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - name: Signal Cleanup
