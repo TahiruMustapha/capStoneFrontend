@@ -27,7 +27,7 @@ export default function Navbar({ onOpen, onSearch }) {
             {/* ++ add modal on clcik button  */}
   
             <button onClick={onOpen} className="btn btn-primary">
-              Add a Client
+              Add new Client
             </button>
           </div>
         </div>
