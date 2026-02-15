@@ -2,14 +2,10 @@ name: "Release & Deploy (Frontend)"
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
     types: [opened, synchronize, reopened, closed]
-    branches:
-      - main
-  # Allow manual trigger for testing
-  workflow_dispatch:
+
 
 concurrency:
   group: deploy-${{ github.workflow }}-${{ github.ref }}
@@ -81,8 +77,6 @@ jobs:
              echo "TAG=pr-${{ github.event.number }}" >> $GITHUB_OUTPUT
              echo "IS_RELEASE=false" >> $GITHUB_OUTPUT
           elif [ "${{ github.event_name }}" == "push" ] && [ "${{ github.ref }}" == "refs/heads/main" ]; then
-             # For main branch pushes, check if semantic-release created a new version
-             # We'll use the latest git tag
              git fetch --tags
              LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
              if [ -n "$LATEST_TAG" ]; then
@@ -110,7 +104,6 @@ jobs:
         run: |
           set -euo pipefail
           
-          # Use the decided TAG from previous step
           FRONTEND_TAG="${{ steps.set_tag.outputs.TAG }}"
 
           echo "Triggering deploy for tag: $FRONTEND_TAG"
